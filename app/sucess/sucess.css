@@ -1,0 +1,249 @@
+/* ==========================
+   SUCESS — DESIGN (verde)
+   bg: #0D0D0D | cards: #141414 | accent: #1FE066
+========================== */
+
+.sucess-root {
+  min-height: 100vh;
+  background: #0D0D0D;
+  color: #fff;
+  font-family: "Poppins", system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+}
+
+/* se seu header é fixed, mantém igual do cart */
+.header-spacer { height: 92px; }
+@media (max-width: 768px){
+  .header-spacer { height: 76px; }
+}
+
+/* container */
+.sucess-container{
+  max-width: 860px;
+  margin: 0 auto;
+  padding: 22px 14px 70px;
+}
+
+/* header */
+.sucess-header{
+  text-align: left;
+  margin: 6px 0 14px;
+}
+
+.sucess-pill{
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  border-radius: 999px;
+  background: rgba(31,224,102,.10);
+  border: 1px dashed rgba(31,224,102,.45);
+  color: #dfffe9;
+  font-weight: 800;
+  font-size: 12.5px;
+}
+
+.sucess-pill-dot{
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: #1FE066;
+  box-shadow: 0 0 0 4px rgba(31,224,102,.12);
+}
+
+.sucess-title{
+  margin: 12px 0 8px;
+  font-size: 26px;
+  font-weight: 900;
+  letter-spacing: -0.3px;
+}
+
+.sucess-subtitle{
+  margin: 0 0 18px;
+  color: rgba(255,255,255,.70);
+  font-size: 14px;
+  line-height: 1.55;
+  max-width: 68ch;
+}
+
+/* card principal */
+.sucess-card{
+  background: #141414;
+  border: 1px solid rgba(255,255,255,0.06);
+  border-radius: 14px;
+  padding: 16px;
+  position: relative;
+  overflow: hidden;
+}
+
+.sucess-card::before{
+  content:"";
+  position:absolute;
+  inset:-1px;
+  background: radial-gradient(900px 280px at 10% 0%, rgba(31,224,102,.16), transparent 58%);
+  pointer-events:none;
+  opacity: .95;
+}
+
+.sucess-card > *{
+  position: relative;
+  z-index: 1;
+}
+
+.sucess-card-top{
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.sucess-card-label{
+  margin: 0 0 4px;
+  font-size: 12px;
+  font-weight: 800;
+  color: rgba(255,255,255,.72);
+}
+
+.sucess-status{
+  margin: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  font-weight: 900;
+}
+
+.sucess-status-dot{
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: #1FE066;
+  box-shadow: 0 0 0 4px rgba(31,224,102,.12);
+}
+
+.sucess-badge{
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 8px 12px;
+  border-radius: 12px;
+  background: rgba(31,224,102,.12);
+  border: 1px solid rgba(31,224,102,.45);
+  color: #dfffe9;
+  font-weight: 900;
+  font-size: 12.5px;
+  white-space: nowrap;
+}
+
+.sucess-divider{
+  height: 1px;
+  width: 100%;
+  background: rgba(255,255,255,0.08);
+  margin: 14px 0;
+}
+
+.sucess-info-grid{
+  display: grid;
+  grid-template-columns: 1fr 1.2fr;
+  gap: 14px;
+}
+
+@media (max-width: 820px){
+  .sucess-info-grid{
+    grid-template-columns: 1fr;
+  }
+}
+
+.sucess-info-label{
+  margin: 0;
+  font-size: 12px;
+  font-weight: 800;
+  color: rgba(255,255,255,.72);
+}
+
+.sucess-info-value{
+  margin: 6px 0 0;
+  font-size: 14px;
+  line-height: 1.55;
+  color: rgba(255,255,255,.92);
+}
+
+.sucess-value{
+  color: #1FE066;
+  font-weight: 900;
+}
+
+/* botão WhatsApp (estilo “cart-continue” / “btn-copy”) */
+.sucess-whats-btn{
+  width: 100%;
+  margin-top: 14px;
+  padding: 14px 16px;
+  border-radius: 12px;
+  border: 1px solid rgba(31,224,102,.55);
+  background: rgba(31,224,102,.10);
+  color: #dfffe9;
+  font-weight: 900;
+  cursor: pointer;
+  transition: .2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+}
+
+.sucess-whats-btn:hover{
+  filter: brightness(1.06);
+  transform: translateY(-1px);
+}
+
+.sucess-whats-btn-icon{
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  width: 28px;
+  height: 28px;
+  border-radius: 10px;
+  background: rgba(37,211,102,.10);
+  border: 1px solid rgba(37,211,102,.25);
+  color: #1FE066;
+}
+
+/* ações */
+.sucess-actions{
+  margin-top: 14px;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+@media (max-width: 640px){
+  .sucess-actions{
+    grid-template-columns: 1fr;
+  }
+}
+
+.sucess-btn{
+  width: 100%;
+  padding: 14px 16px;
+  border-radius: 12px;
+  border: none;
+  cursor: pointer;
+  background: #1FE066;
+  color: #071007;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: .6px;
+  transition: .2s ease;
+}
+
+.sucess-btn:hover{
+  filter: brightness(1.05);
+  transform: translateY(-1px);
+}
+
+.sucess-btn.secundary{
+  background: #0F0F0F;
+  border: 1px solid rgba(31,224,102,.55);
+  color: #dfffe9;
+  text-transform: none;
+  letter-spacing: .2px;
+}
