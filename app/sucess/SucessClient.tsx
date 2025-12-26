@@ -1,381 +1,150 @@
 "use client";
-import { useState, useEffect } from "react";
-import Image from "next/image";
+
+import { useMemo } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import Script from "next/script";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
-import { useCart } from "@/context/CartContext";
-import { useRouter } from "next/navigation";
-import "./cart.css";
+import "./sucess.css";
 
-declare global {
-  interface Window {
-    gtag?: (...args: any[]) => void;
-  }
-}
-
-export default function CartPage() {
-  const { cart, removeFromCart, updateQty } = useCart();
+export default function SucessClient() {
   const router = useRouter();
+  const searchParams = useSearchParams();
 
-  const [showSupportBox, setShowSupportBox] = useState(false);
+  const orderId = searchParams.get("order") || "";
+  const produto = searchParams.get("produto") || "Robux";
+  const valor = searchParams.get("valor") || "";
 
-  const whatsappNumber = "5575920018871";
+  const whatsappNumber = "5562999999999";
+
+  const defaultMessage = useMemo(() => {
+    const parts = [
+      "Olá! Acabei de fazer uma compra na loja e gostaria de enviar o comprovante de pagamento para agilizar o envio do meu pedido.",
+      orderId ? `Pedido: #${orderId}` : "",
+      produto ? `Produto: ${produto}` : "",
+      valor ? `Valor: R$ ${valor}` : "",
+    ].filter(Boolean);
+
+    return parts.join("\n");
+  }, [orderId, produto, valor]);
 
   const handleSendWhatsApp = () => {
-    const defaultMessage =
-      "Olá! Acabei de gerar um PIX no site, já realizei o pagamento mas o status não apareceu como confirmado. Quero enviar o comprovante para liberação do meu pedido.";
     const url = `https://wa.me/${whatsappNumber}?text=${encodeURIComponent(
       defaultMessage
     )}`;
     window.open(url, "_blank");
   };
 
-  const subtotal = cart.reduce((acc, item) => acc + item.price * item.qty, 0);
-
-  const [showPixModal, setShowPixModal] = useState(false);
-  const [pixData, setPixData] = useState<{
-    code: string;
-    qrcode_base64: string;
-  } | null>(null);
-  const [loading, setLoading] = useState(false);
-  const [timeLeft, setTimeLeft] = useState(300);
-
-  const [email, setEmail] = useState("");
-  const [firstName, setFirstName] = useState("");
-  const [lastName, setLastName] = useState("");
-  const [formError, setFormError] = useState("");
-
-  // Reinicia o timer ao abrir o modal
-  useEffect(() => {
-    if (showPixModal) setTimeLeft(300);
-  }, [showPixModal]);
-
-  // Contador regressivo
-  useEffect(() => {
-    if (!showPixModal || timeLeft <= 0) return;
-    const interval = setInterval(() => setTimeLeft((prev) => prev - 1), 1000);
-    return () => clearInterval(interval);
-  }, [timeLeft, showPixModal]);
-
-  useEffect(() => {
-    if (showPixModal) {
-      const timer = setTimeout(() => {
-        setShowSupportBox(true);
-      }, 30000);
-      return () => clearTimeout(timer);
-    } else {
-      setShowSupportBox(false);
-    }
-  }, [showPixModal]);
-
-  // ✅ Verifica status do pagamento apenas enquanto o modal está aberto
-  useEffect(() => {
-    if (!showPixModal) return;
-
-    const extId = localStorage.getItem("external_id");
-    if (!extId) return;
-
-    let stopped = false;
-
-    const checkStatus = async () => {
-      try {
-        const res = await fetch(`/api/create-payment?externalId=${extId}`);
-        const data = await res.json();
-
-        if (data.status === "PAID" || data.status === "APPROVED") {
-          localStorage.removeItem("external_id");
-          router.push("/sucess");
-        } else if (!stopped) {
-          setTimeout(checkStatus, 7000);
-        }
-      } catch (err) {
-        console.error("Erro ao verificar status:", err);
-        if (!stopped) setTimeout(checkStatus, 10000);
-      }
-    };
-
-    checkStatus();
-    return () => {
-      stopped = true;
-    };
-  }, [showPixModal, router, subtotal]);
-
-  const formatTime = (seconds: number) => {
-    const m = String(Math.floor(seconds / 60)).padStart(2, "0");
-    const s = String(seconds % 60).padStart(2, "0");
-    return `${m}:${s}`;
-  };
-
-  const validateEmail = (email: string) =>
-    /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
-
-  const handleCheckout = async () => {
-    if (!firstName || !lastName) {
-      setFormError("Por favor, preencha nome e sobrenome");
-      return;
-    }
-    if (!email || !validateEmail(email)) {
-      setFormError("Por favor, insira um email válido");
-      return;
-    }
-    setFormError("");
-
-    if (cart.length === 0) {
-      alert("Seu carrinho está vazio.");
-      return;
-    }
-
-    setLoading(true);
-    try {
-      const externalId = `rbx_${Date.now()}`;
-
-      const payload = {
-        name: `${firstName.trim()} ${lastName.trim()}`,
-        email,
-        phone: "559999999999", // mantém seu fallback
-        amount: subtotal,
-        items: cart.map((item) => ({
-          id: String(item.id),
-          title: item.name,
-          unitPrice: item.price,
-          quantity: item.qty,
-          tangible: false,
-        })),
-        externalId,
-      };
-
-      const res = await fetch("/api/create-payment", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
-      });
-
-      const data = await res.json();
-
-      if (!res.ok) {
-        console.error("Erro Checkout:", data);
-        alert("Erro ao gerar Pix: " + (data.error || "desconhecido"));
-        return;
-      }
-
-      if (data.data?.pix) {
-        setPixData({
-          code: data.data.pix.code,
-          qrcode_base64: data.data.pix.qrcode_base64,
-        });
-        localStorage.setItem("external_id", externalId);
-        setShowPixModal(true);
-      } else {
-        alert("Erro ao gerar pagamento: resposta inválida da BuckPay");
-      }
-    } catch (err) {
-      console.error(err);
-      alert("Erro ao gerar PIX");
-    } finally {
-      setLoading(false);
-    }
-  };
-
   return (
-    <div className="cart-root">
+    <div className="sucess-root">
+      <Script id="google-purchase-conversion" strategy="afterInteractive">
+        {`
+          if (typeof gtag === 'function') {
+            gtag('event', 'conversion', {
+              'send_to': 'AW-',
+              'value': 1.0,
+              'currency': 'BRL',
+              'transaction_id': '${orderId || ""}'
+            });
+          }
+        `}
+      </Script>
+
       <Header />
       <div className="header-spacer" />
 
-      <main className="cart-container">
-        <h1 className="cart-title">Carrinho de compras</h1>
-        <p className="cart-subtitle">
-          Nesta página, você encontra os produtos adicionados ao seu carrinho.
-        </p>
+      <main className="sucess-container">
+        <div className="sucess-header">
+          <span className="sucess-pill">
+            <span className="sucess-pill-dot" />
+            {orderId ? `Pedido #${orderId}` : "Pedido confirmado"}
+          </span>
 
-        <div className="cart-grid">
-          {/* === Dados do comprador === */}
-          <div className="cart-box">
-            <h3>Informações de pagamento</h3>
+          <h1 className="sucess-title">Pagamento aprovado!</h1>
 
-            <label>Nome *</label>
-            <input
-              type="text"
-              placeholder="Digite seu nome"
-              value={firstName}
-              onChange={(e) => setFirstName(e.target.value)}
-            />
+          <p className="sucess-subtitle">
+            Seu pagamento foi confirmado com sucesso. Agora é só aguardar a
+            entrega. Se não chegar no e-mail, envie o comprovante no WhatsApp
+            para liberação imediata.
+          </p>
+        </div>
 
-            <label>Sobrenome *</label>
-            <input
-              type="text"
-              placeholder="Digite seu sobrenome"
-              value={lastName}
-              onChange={(e) => setLastName(e.target.value)}
-            />
-
-            <label>Email *</label>
-            <input
-              type="email"
-              placeholder="Insira seu email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-            />
-
-            {formError && <p className="email-error">{formError}</p>}
-
-            <button className="cart-coupon">Adicionar cupom de desconto</button>
-          </div>
-
-          {/* === Itens no carrinho === */}
-          <div className="cart-box">
-            <h3>Produtos no carrinho</h3>
-            {cart.length === 0 ? (
-              <p>Seu carrinho está vazio.</p>
-            ) : (
-              cart.map((item) => (
-                <div className="cart-product" key={item.id}>
-                  <Image
-                    src={item.image}
-                    alt={item.name}
-                    width={64}
-                    height={64}
-                  />
-                  <div className="cart-prod-info">
-                    <h4>{item.name}</h4>
-                    <button
-                      className="cart-remove"
-                      onClick={() => removeFromCart(item.id)}
-                    >
-                      Excluir
-                    </button>
-                  </div>
-                  <div className="cart-qty">
-                    <button
-                      onClick={() =>
-                        updateQty(item.id, Math.max(1, item.qty - 1))
-                      }
-                      className="qtybtn"
-                    >
-                      –
-                    </button>
-                    <input type="text" value={item.qty} readOnly />
-                    <button
-                      onClick={() =>
-                        updateQty(item.id, Math.min(99, item.qty + 1))
-                      }
-                      className="qtybtn"
-                    >
-                      +
-                    </button>
-                  </div>
-                  <div className="cart-price">
-                    R$ {(item.price * item.qty).toFixed(2)}
-                  </div>
-                </div>
-              ))
-            )}
-          </div>
-
-          {/* === Resumo e botão === */}
-          <div className="cart-box">
-            <h3>Resumo da compra</h3>
-            <div className="cart-resumo">
-              <p>
-                Subtotal ({cart.length} item{cart.length > 1 && "s"}){" "}
-                <span>R$ {subtotal.toFixed(2)}</span>
-              </p>
-              <hr />
-              <p className="cart-total">
-                Total <span>R$ {subtotal.toFixed(2)}</span>
+        <div className="sucess-card">
+          <div className="sucess-card-top">
+            <div>
+              <p className="sucess-card-label">Status do pagamento</p>
+              <p className="sucess-status">
+                <span className="sucess-status-dot" />
+                Pago
               </p>
             </div>
-            <button
-              className="cart-continue"
-              onClick={handleCheckout}
-              disabled={loading}
-            >
-              {loading ? "Gerando Pix..." : "Finalizar compra"}
-            </button>
+
+            <div className="sucess-badge">{produto}</div>
           </div>
+
+          <div className="sucess-divider" />
+
+          <div className="sucess-info-grid">
+            <div>
+              <p className="sucess-info-label">Produto</p>
+              <p className="sucess-info-value">{produto}</p>
+            </div>
+
+            <div>
+              <p className="sucess-info-label">Entrega</p>
+              <p className="sucess-info-value">
+                Enviamos no e-mail após confirmação. Caso não encontre, verifique
+                spam/lixeira e depois fale no WhatsApp para liberação imediata.
+              </p>
+            </div>
+
+            {valor ? (
+              <div>
+                <p className="sucess-info-label">Valor</p>
+                <p className="sucess-info-value sucess-value">R$ {valor}</p>
+              </div>
+            ) : null}
+          </div>
+
+          <button className="sucess-whats-btn" onClick={handleSendWhatsApp}>
+            <span className="sucess-whats-btn-icon">
+              <svg
+                width="18"
+                height="18"
+                viewBox="0 0 32 32"
+                fill="none"
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <path
+                  d="M16 3C9.373 3 4 8.149 4 14.5c0 2.405.817 4.638 2.22 6.45L5 29l8.335-1.997A12.66 12.66 0 0 0 16 26c6.627 0 12-5.149 12-11.5S22.627 3 16 3Z"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  opacity="0.9"
+                />
+                <path
+                  d="M12.2 11.2c.3-.7.6-.7.9-.7h.8c.2 0 .5.1.6.4l1.1 2.5c.1.3.1.6-.1.8l-.6.6c-.2.2-.2.4-.1.6.6 1.2 1.6 2.2 2.8 2.8.2.1.4.1.6-.1l.6-.6c.2-.2.5-.2.8-.1l2.5 1.1c.3.1.4.4.4.6v.8c0 .3 0 .6-.7.9-.7.3-2.3.7-4.7-.3-2.4-1-4.2-2.8-5.2-5.2-1-2.4-.6-4 .1-4.7Z"
+                  fill="currentColor"
+                />
+              </svg>
+            </span>
+            Enviar comprovante no WhatsApp
+          </button>
+        </div>
+
+        <div className="sucess-actions">
+          <button className="sucess-btn" onClick={() => router.push("/")}>
+            Voltar para a loja
+          </button>
+
+          <button
+            className="sucess-btn secundary"
+            onClick={() => router.push("/")}
+            type="button"
+          >
+            Ver mais produtos
+          </button>
         </div>
       </main>
-
-      {/* === Modal PIX === */}
-      {showPixModal && pixData && (
-        <div className="pix-overlay">
-          <div className="pix-modal">
-            <button className="pix-close" onClick={() => setShowPixModal(false)}>
-              ×
-            </button>
-
-            {pixData.qrcode_base64 && (
-              <div className="pix-qr">
-                <img
-                  src={`data:image/png;base64,${pixData.qrcode_base64}`}
-                  alt="QR Code Pix"
-                />
-              </div>
-            )}
-
-            {pixData.code && (
-              <div className="pix-card">
-                <p className="pix-label">Código PIX:</p>
-                <div className="pix-code-group">
-                  <textarea value={pixData.code} readOnly />
-                  <button
-                    onClick={() => navigator.clipboard.writeText(pixData.code)}
-                    className="btn-copy"
-                  >
-                    Copiar
-                  </button>
-                </div>
-              </div>
-            )}
-
-            <p className="pix-info">
-              Escaneie o QR Code ou copie o código PIX para realizar o pagamento
-            </p>
-
-            <div className="pix-progress">
-              <div className="progress-bar"></div>
-              <p className="pix-timer">{formatTime(timeLeft)}</p>
-            </div>
-
-            {showSupportBox && (
-              <div className="pix-whats-box">
-                <div className="pix-whats-header">
-                  <div>
-                    <p className="pix-whats-title">
-                      Pagou e não confirmou ainda?
-                    </p>
-                    <p className="pix-whats-text">
-                      Fale com nosso time de suporte e enviaremos seu pedido após
-                      a conferência.
-                    </p>
-                  </div>
-                </div>
-
-                <p className="pix-whats-extra">
-                  Se o status não aparecer como <strong>confirmado</strong> após
-                  alguns minutos, você pode enviar o{" "}
-                  <strong>comprovante do PIX</strong> e o{" "}
-                  <strong>e-mail usado na compra</strong> pelo WhatsApp.
-                </p>
-
-                <button className="pix-whats-btn" onClick={handleSendWhatsApp}>
-                  <span className="pix-whats-btn-icon">
-                    <svg
-                      xmlns="http://www.w3.org/2000/svg"
-                      width="18"
-                      height="18"
-                      viewBox="0 0 24 24"
-                      fill="#25D366"
-                    >
-                      <path d="M20.52 3.48A11.8 11.8 0 0 0 12 .2 11.8 11.8 0 0 0 3.48 3.48 11.8 11.8 0 0 0 .2 12c0 2.09.54 4.13 1.57 5.94L.11 23.89l6.07-1.62A12 12 0 0 0 12 23.8h.01c6.54 0 11.8-5.26 11.8-11.8 0-3.16-1.23-6.14-3.29-8.2zm-8.51 18c-1.86 0-3.68-.5-5.27-1.46l-.38-.23-3.6.96.96-3.52-.25-.4A9.73 9.73 0 0 1 2.27 12c0-5.39 4.38-9.77 9.78-9.77 2.61 0 5.06 1.02 6.9 2.86a9.7 9.7 0 0 1 2.87 6.9c0 5.4-4.38 9.78-9.79 9.78zm5.41-7.3c-.29-.14-1.7-.84-1.96-.94-.26-.1-.45-.14-.64.14-.19.29-.74.94-.91 1.13-.17.19-.34.21-.63.07-.29-.14-1.22-.45-2.32-1.44-.85-.76-1.43-1.7-1.6-1.98-.17-.29-.02-.45.13-.6.13-.13.29-.34.43-.51.14-.17.19-.29.29-.48.1-.19.05-.36-.02-.5-.07-.14-.64-1.54-.88-2.11-.23-.55-.47-.47-.64-.48-.17-.01-.36-.01-.55-.01-.19 0-.5.07-.76.36-.26.29-1 1-1 2.45 0 1.45 1.02 2.85 1.16 3.04.14.19 2 3.08 4.85 4.31.68.29 1.21.46 1.63.59.68.22 1.3.19 1.79.12.55-.08 1.7-.7 1.94-1.38.24-.67.24-1.25.17-1.38-.07-.14-.26-.21-.55-.36z" />
-                    </svg>
-                  </span>
-                  Falar com suporte no WhatsApp
-                </button>
-              </div>
-            )}
-          </div>
-        </div>
-      )}
 
       <Footer />
     </div>
