@@ -5,19 +5,13 @@ import { gerarCPFValido } from '@/lib/utils'
 import { sendOrderToUtmify, formatToUtmifyDate } from '@/lib/utmifyService'
 import { UtmifyOrderPayload } from '@/interfaces/utmify'
 import { PaymentPayload } from '@/interfaces/types'
-import { sendTikTokEvent } from '@/lib/tiktokEvents'
 
 /* ======================================================
    POST - Criação de pagamento
 ====================================================== */
 
 export async function POST(request: NextRequest) {
-  let requestBody: PaymentPayload & {
-    ttclid?: string
-    ttp?: string
-    pageUrl?: string
-    referrer?: string
-  }
+  let requestBody: PaymentPayload
 
   try {
     requestBody = await request.json()
@@ -30,10 +24,6 @@ export async function POST(request: NextRequest) {
       items,
       externalId,
       utmQuery,
-      ttclid,
-      ttp,
-      pageUrl,
-      referrer,
     } = requestBody
 
     const apiToken = process.env.BUCKPAY_API_TOKEN
@@ -47,16 +37,19 @@ export async function POST(request: NextRequest) {
 
     const parsedAmount = parseFloat(String(amount))
     if (isNaN(parsedAmount) || parsedAmount <= 0) {
-      return new NextResponse(JSON.stringify({ error: 'Valor do pagamento inválido.' }), {
-        status: 400,
-      })
+      return new NextResponse(
+        JSON.stringify({ error: 'Valor do pagamento inválido.' }),
+        { status: 400 }
+      )
     }
+
     const amountInCents = Math.round(parsedAmount * 100)
 
     if (!Array.isArray(items) || items.length === 0) {
-      return new NextResponse(JSON.stringify({ error: 'Itens do pedido inválidos.' }), {
-        status: 400,
-      })
+      return new NextResponse(
+        JSON.stringify({ error: 'Itens do pedido inválidos.' }),
+        { status: 400 }
+      )
     }
 
     const finalCpf = (requestBody.cpf || gerarCPFValido()).replace(/\D/g, '')
@@ -96,15 +89,18 @@ export async function POST(request: NextRequest) {
       },
     }
 
-    const buckpayResponse = await fetch('https://api.realtechdev.com.br/v1/transactions', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${apiToken}`,
-        'User-Agent': 'Buckpay API',
-      },
-      body: JSON.stringify(payloadForBuckPay),
-    })
+    const buckpayResponse = await fetch(
+      'https://api.realtechdev.com.br/v1/transactions',
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${apiToken}`,
+          'User-Agent': 'Buckpay API',
+        },
+        body: JSON.stringify(payloadForBuckPay),
+      }
+    )
 
     const responseData = await buckpayResponse.json()
 
@@ -120,29 +116,9 @@ export async function POST(request: NextRequest) {
 
     const buckpayData = responseData.data
 
-    // ✅ TikTok: InitiateCheckout (server-side) assim que o PIX é gerado
-    await sendTikTokEvent({
-      req: request,
-      event: 'InitiateCheckout',
-      eventId: `${externalId}_init`,
-      email,
-      phone,
-      externalId,
-      value: amountInCents / 100,
-      currency: 'BRL',
-      contents: items.map((it: any) => ({
-        content_id: String(it.id || it.title),
-        content_name: it.title,
-        quantity: Number(it.quantity) || 1,
-        price: Number(it.unitPrice) || 0,
-      })),
-      ttclid,
-      ttp,
-      url: pageUrl,
-      referrer,
-    })
-
-    // ✅ UTMify waiting_payment (mantém seu fluxo)
+    /* ============================
+       UTMify - waiting_payment
+    ============================ */
     if (buckpayData && buckpayData.id) {
       const utmifyPayload: UtmifyOrderPayload = {
         orderId: buckpayData.id,
@@ -215,17 +191,19 @@ export async function GET(request: NextRequest) {
   const externalId = searchParams.get('externalId')
 
   if (!externalId) {
-    return new NextResponse(JSON.stringify({ error: 'externalId é obrigatório.' }), {
-      status: 400,
-    })
+    return new NextResponse(
+      JSON.stringify({ error: 'externalId é obrigatório.' }),
+      { status: 400 }
+    )
   }
 
   try {
     const apiToken = process.env.BUCKPAY_API_TOKEN
     if (!apiToken) {
-      return new NextResponse(JSON.stringify({ error: 'Configuração do servidor incompleta.' }), {
-        status: 500,
-      })
+      return new NextResponse(
+        JSON.stringify({ error: 'Configuração do servidor incompleta.' }),
+        { status: 500 }
+      )
     }
 
     const buckpayStatusResponse = await fetch(
@@ -241,7 +219,9 @@ export async function GET(request: NextRequest) {
     )
 
     if (buckpayStatusResponse.status === 404) {
-      return new NextResponse(JSON.stringify({ status: 'PENDING' }), { status: 200 })
+      return new NextResponse(JSON.stringify({ status: 'PENDING' }), {
+        status: 200,
+      })
     }
 
     const statusData = await buckpayStatusResponse.json()
@@ -256,9 +236,13 @@ export async function GET(request: NextRequest) {
       )
     }
 
-    const paymentStatus = statusData.data?.status?.toUpperCase() || 'UNKNOWN'
+    const paymentStatus =
+      statusData.data?.status?.toUpperCase() || 'UNKNOWN'
 
-    return new NextResponse(JSON.stringify({ status: paymentStatus }), { status: 200 })
+    return new NextResponse(
+      JSON.stringify({ status: paymentStatus }),
+      { status: 200 }
+    )
   } catch (error: any) {
     console.error('[create-payment GET] Erro interno:', error)
     return new NextResponse(
