@@ -118,7 +118,7 @@ header {
   right: 0;
   bottom: 0;
   height: 3px;
-  background: linear-gradient(to right, transparent, #d0bc64, transparent);
+  background: linear-gradient(to right, transparent, #1FE066, transparent);
 }
 
 .search input::placeholder {
@@ -197,7 +197,7 @@ header {
   bottom: 0;
   height: 2px;
   width: 225px; /* comprimento da linha */
-  background: linear-gradient(to right, #1FE066, rgba(255, 215, 0, 0));
+  background: linear-gradient(to right, #1FE066, rgba(21, 255, 0, 0));
   border-radius: 2px;
   transform: translateX(-50%);
 }
@@ -402,7 +402,7 @@ header {
 }
 
 .destaque-card:hover {
-  border: 1px solid #7a6f3a;
+  border: 1px solid #3a7a3f;
   transform: translateY(-8px);
 }
 .destaque-card:hover .destaque-img {
@@ -441,7 +441,7 @@ header {
   font-weight: 600;
   cursor: pointer;
   transition: all 0.25s ease-in-out;
-  box-shadow: 0 0 4px rgb(251, 255, 7);
+  box-shadow: 0 0 4px rgb(7, 255, 7);
 }
 
 .btn-yellow:hover {

@@ -13,23 +13,6 @@ declare global {
   }
 }
 
-function getCookie(name: string) {
-  if (typeof document === "undefined") return "";
-  const m = document.cookie.match(new RegExp("(^| )" + name + "=([^;]+)"));
-  return m ? decodeURIComponent(m[2]) : "";
-}
-
-function getOrPersistTTCLID() {
-  if (typeof window === "undefined") return "";
-  const params = new URLSearchParams(window.location.search);
-  const fromUrl = params.get("ttclid") || "";
-  if (fromUrl) {
-    localStorage.setItem("ttclid", fromUrl);
-    return fromUrl;
-  }
-  return localStorage.getItem("ttclid") || "";
-}
-
 export default function CartPage() {
   const { cart, removeFromCart, updateQty } = useCart();
   const router = useRouter();
@@ -41,14 +24,19 @@ export default function CartPage() {
   const handleSendWhatsApp = () => {
     const defaultMessage =
       "Olá! Acabei de gerar um PIX no site, já realizei o pagamento mas o status não apareceu como confirmado. Quero enviar o comprovante para liberação do meu pedido.";
-    const url = `https://wa.me/${whatsappNumber}?text=${encodeURIComponent(defaultMessage)}`;
+    const url = `https://wa.me/${whatsappNumber}?text=${encodeURIComponent(
+      defaultMessage
+    )}`;
     window.open(url, "_blank");
   };
 
   const subtotal = cart.reduce((acc, item) => acc + item.price * item.qty, 0);
 
   const [showPixModal, setShowPixModal] = useState(false);
-  const [pixData, setPixData] = useState<{ code: string; qrcode_base64: string } | null>(null);
+  const [pixData, setPixData] = useState<{
+    code: string;
+    qrcode_base64: string;
+  } | null>(null);
   const [loading, setLoading] = useState(false);
   const [timeLeft, setTimeLeft] = useState(300);
 
@@ -56,11 +44,6 @@ export default function CartPage() {
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
   const [formError, setFormError] = useState("");
-
-  // ✅ captura ttclid e salva assim que entrar na página
-  useEffect(() => {
-    getOrPersistTTCLID();
-  }, []);
 
   // Reinicia o timer ao abrir o modal
   useEffect(() => {
@@ -123,7 +106,8 @@ export default function CartPage() {
     return `${m}:${s}`;
   };
 
-  const validateEmail = (email: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+  const validateEmail = (email: string) =>
+    /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
 
   const handleCheckout = async () => {
     if (!firstName || !lastName) {
@@ -145,12 +129,6 @@ export default function CartPage() {
     try {
       const externalId = `rbx_${Date.now()}`;
 
-      // ✅ TikTok attribution
-      const ttclid = getOrPersistTTCLID();
-      const ttp = getCookie("_ttp");
-      const pageUrl = typeof window !== "undefined" ? window.location.href : "";
-      const referrer = typeof document !== "undefined" ? document.referrer : "";
-
       const payload = {
         name: `${firstName.trim()} ${lastName.trim()}`,
         email,
@@ -164,12 +142,6 @@ export default function CartPage() {
           tangible: false,
         })),
         externalId,
-
-        // ✅ manda pro server (create-payment)
-        ttclid: ttclid || undefined,
-        ttp: ttp || undefined,
-        pageUrl,
-        referrer,
       };
 
       const res = await fetch("/api/create-payment", {
@@ -257,29 +229,43 @@ export default function CartPage() {
             ) : (
               cart.map((item) => (
                 <div className="cart-product" key={item.id}>
-                  <Image src={item.image} alt={item.name} width={64} height={64} />
+                  <Image
+                    src={item.image}
+                    alt={item.name}
+                    width={64}
+                    height={64}
+                  />
                   <div className="cart-prod-info">
                     <h4>{item.name}</h4>
-                    <button className="cart-remove" onClick={() => removeFromCart(item.id)}>
+                    <button
+                      className="cart-remove"
+                      onClick={() => removeFromCart(item.id)}
+                    >
                       Excluir
                     </button>
                   </div>
                   <div className="cart-qty">
                     <button
-                      onClick={() => updateQty(item.id, Math.max(1, item.qty - 1))}
+                      onClick={() =>
+                        updateQty(item.id, Math.max(1, item.qty - 1))
+                      }
                       className="qtybtn"
                     >
                       –
                     </button>
                     <input type="text" value={item.qty} readOnly />
                     <button
-                      onClick={() => updateQty(item.id, Math.min(99, item.qty + 1))}
+                      onClick={() =>
+                        updateQty(item.id, Math.min(99, item.qty + 1))
+                      }
                       className="qtybtn"
                     >
                       +
                     </button>
                   </div>
-                  <div className="cart-price">R$ {(item.price * item.qty).toFixed(2)}</div>
+                  <div className="cart-price">
+                    R$ {(item.price * item.qty).toFixed(2)}
+                  </div>
                 </div>
               ))
             )}
@@ -298,7 +284,11 @@ export default function CartPage() {
                 Total <span>R$ {subtotal.toFixed(2)}</span>
               </p>
             </div>
-            <button className="cart-continue" onClick={handleCheckout} disabled={loading}>
+            <button
+              className="cart-continue"
+              onClick={handleCheckout}
+              disabled={loading}
+            >
               {loading ? "Gerando Pix..." : "Finalizar compra"}
             </button>
           </div>
@@ -350,16 +340,20 @@ export default function CartPage() {
               <div className="pix-whats-box">
                 <div className="pix-whats-header">
                   <div>
-                    <p className="pix-whats-title">Pagou e não confirmou ainda?</p>
+                    <p className="pix-whats-title">
+                      Pagou e não confirmou ainda?
+                    </p>
                     <p className="pix-whats-text">
-                      Fale com nosso time de suporte e enviaremos seu pedido após a conferência.
+                      Fale com nosso time de suporte e enviaremos seu pedido após
+                      a conferência.
                     </p>
                   </div>
                 </div>
 
                 <p className="pix-whats-extra">
-                  Se o status não aparecer como <strong>confirmado</strong> após alguns minutos,
-                  você pode enviar o <strong>comprovante do PIX</strong> e o{" "}
+                  Se o status não aparecer como <strong>confirmado</strong> após
+                  alguns minutos, você pode enviar o{" "}
+                  <strong>comprovante do PIX</strong> e o{" "}
                   <strong>e-mail usado na compra</strong> pelo WhatsApp.
                 </p>
 
