@@ -81,7 +81,7 @@ export default function Home() {
       Junte-se a milhares de clientes satisfeitos.
     </p>
 
-    <Link href="/produtos" className="banner-btn">
+    <Link href="" className="banner-btn">
       COMPRAR AGORA
     </Link>
   </div>
