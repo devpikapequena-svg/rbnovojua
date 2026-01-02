@@ -100,7 +100,7 @@ export default function RootLayout({
         e.parentNode.insertBefore(n, e);
       };
 
-      ttq.load('D5BDNEJC77UD75S4NVJ0');
+      ttq.load('D5BVA93C77U843EEFKVG');
 
       // ❌ NÃO CHAMAR ttq.page() AQUI
     }(window, document, 'ttq');
