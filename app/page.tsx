@@ -91,7 +91,7 @@ export default function Home() {
       <Beneficios />
 
       {/* MAIS VENDIDOS */}
-      <section className="produtos">
+<section id="produtos" className="produtos">
         <h2>MAIS VENDIDOS</h2>
         <div className="grid carousel" ref={carouselRef}>
           {produtos.map((p) => (
